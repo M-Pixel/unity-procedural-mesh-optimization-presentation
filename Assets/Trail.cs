@@ -61,13 +61,15 @@ public class Trail : MonoBehaviour {
 			break;
 		}
 
+		var pointCount = _points.Count;
+
 		// Do we add any new points?
 		if (_emit)
 		{
 			// Make sure there are always at least 2 points when emitting
-			if (_pointCnt < 2)
+			if (pointCount < 2)
 			{
-				if (_pointCnt < 1)
+				if (pointCount < 1)
 					InsertPoint();
 				InsertPoint();
 			}
@@ -92,7 +94,7 @@ public class Trail : MonoBehaviour {
 		}
 
 		// Do we render this?
-		if (_pointCnt < 2)
+		if (pointCount < 2)
 		{
 			_renderer.enabled = false;
 			return;
@@ -104,7 +106,7 @@ public class Trail : MonoBehaviour {
 		// Do we fade it out?
 		if (!_emit)
 		{
-			if (_pointCnt == 0)
+			if (pointCount == 0)
 				return;
 			var color = _instanceMaterial.GetColor("_TintColor");
 			color.a -= _fadeOutRatio * _lifeTimeRatio * Time.deltaTime;
@@ -114,13 +116,13 @@ public class Trail : MonoBehaviour {
 		}
 
 		// Rebuild it
-		var vertices = new Vector3[_pointCnt * 2];
-		var uvs = new Vector2[_pointCnt * 2];
-		var triangles = new int[(_pointCnt - 1) * 6];
-		var meshColors = new Color[_pointCnt * 2];
+		var vertices = new Vector3[pointCount * 2];
+		var uvs = new Vector2[pointCount * 2];
+		var triangles = new int[(pointCount - 1) * 6];
+		var meshColors = new Color[pointCount * 2];
 
-		var uvMultiplier = 1 / (_points[_pointCnt - 1].TimeAlive - _points[0].TimeAlive);
-		for (var i = 0; i < _pointCnt; i++)
+		var uvMultiplier = 1 / (_points[pointCount - 1].TimeAlive - _points[0].TimeAlive);
+		for (var i = 0; i < pointCount; i++)
 		{
 			var point = _points[i];
 			var ratio = point.TimeAlive * _lifeTimeRatio;
