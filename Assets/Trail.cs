@@ -64,13 +64,13 @@ public class Trail : MonoBehaviour {
 		// Do we add any new points?
 		if (_emit)
 		{
-			if (_pointCnt == 0)
+			// Make sure there are always at least 2 points when emitting
+			if (_pointCnt < 2)
 			{
-				_points[_pointCnt++] = new Point(_source.transform);
-				_points[_pointCnt++] = new Point(_source.transform);
-			}
-			if (_pointCnt == 1)
+				if (_pointCnt < 1)
+					InsertPoint();
 				InsertPoint();
+			}
 
 			var add = false;
 			var sqrDistance = (_points[1].Position - _source.transform.position).sqrMagnitude;
