@@ -1,5 +1,8 @@
 ﻿using UnityEngine;
 
+/// <summary>
+/// Based on http://wiki.unity3d.com/index.php/OptimizedTrailRenderer
+/// </summary>
 public class Trail : MonoBehaviour {
 	// Material - Must be a particle material that has the "Tint Color" property
 	public Material material;
