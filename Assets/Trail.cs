@@ -12,7 +12,6 @@ public class Trail : MonoBehaviour {
 
 	// Emit
 	[SerializeField] private bool _emit = true;
-	private bool _emittingDone = false;
 	
 	[SerializeField] private float _segmentLifetime = 1;
 	private float _lifeTimeRatio = 1;
@@ -52,12 +51,6 @@ public class Trail : MonoBehaviour {
 
 	private void Update()
 	{
-		// Emitting - Designed for one-time use
-		if (!_emit)
-			_emittingDone = true;
-		if (_emittingDone)
-			_emit = false;
-
 		// Remove expired points
 		for (var i = _pointCnt - 1; i >= 0; i--)
 		{
