@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 /// <summary>
 /// Based on http://wiki.unity3d.com/index.php/OptimizedTrailRenderer
@@ -34,8 +35,8 @@ public class Trail : MonoBehaviour {
 	private MeshRenderer _renderer;
 
 	// Points
-	private Point[] _points = new Point[100];
-	private int _pointCnt = 0;
+	private Queue<Point> _points = new Queue<Point>();
+	private Queue<Point> _pointPool = new Queue<Point>();
 
 	private void Start()
 	{
