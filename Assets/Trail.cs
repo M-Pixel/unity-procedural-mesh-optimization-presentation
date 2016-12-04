@@ -36,10 +36,9 @@ public class Trail : MonoBehaviour {
 
 	// Points
 	[SerializeField] int _maximumPoints = 500;
-	private Queue<Point> _points;
-	private Queue<Point> _pointPool;
-	private Point _newestPoint;
-	private Point _secondNewestPoint;
+	private Point[] _points;
+	private int _pointCount;
+	private int _oldestPoint;
 
 	// Mesh
 	private Vector3[] _vertexBuffer;
@@ -50,8 +49,7 @@ public class Trail : MonoBehaviour {
 
 	private void Start()
 	{
-		_points = new Queue<Point>(_maximumPoints);
-		_pointPool = new Queue<Point>(_maximumPoints);
+		_points = new Point[_maximumPoints];
 		_vertexBuffer = new Vector3[_maximumPoints * 2];
 		_uvBuffer = new Vector2[_maximumPoints * 2];
 		_triangleBuffer = new List<int>(_maximumPoints * 6);
@@ -66,37 +64,46 @@ public class Trail : MonoBehaviour {
 	private void Update()
 	{
 		// Remove expired points
-		while (_points.Count > 0)
+		while (_pointCount > 0)
 		{
-			var point = _points.Peek();
-			if (point == null || point.TimeAlive > _segmentLifetime)
+			if (_points[_oldestPoint].TimeAlive > _segmentLifetime)
 			{
-				_pointPool.Enqueue(_points.Dequeue());
+				_oldestPoint++;
+				_pointCount--;
 				continue;
 			}
 			break;
 		}
 
-		var pointCount = _points.Count;
-
 		// Do we add any new points?
 		if (_emit)
 		{
 			// Make sure there are always at least 2 points when emitting
-			if (pointCount < 2)
+			if (_pointCount < 2)
 			{
-				if (pointCount < 1)
+				if (_pointCount < 1)
 					InsertPoint();
 				InsertPoint();
 			}
+		}
 
+		var newestPointIndex = _oldestPoint + _pointCount;
+		// wrap around to the beginning
+		if (newestPointIndex >= _points.Length)
+			newestPointIndex -= _points.Length;
+
+		var secondNewestPointIndex = newestPointIndex + 1;
+		if (secondNewestPointIndex >= _points.Length)
+			secondNewestPointIndex -= _points.Length;
+
+		if (_emit) {
 			var add = false;
-			var sqrDistance = (_secondNewestPoint.Position - _source.transform.position).sqrMagnitude;
+			var sqrDistance = (_points[secondNewestPointIndex].Position - _source.transform.position).sqrMagnitude;
 			if (sqrDistance > _minVertexDistance * _minVertexDistance)
 			{
 				if (sqrDistance > _maxVertexDistance * _maxVertexDistance)
 					add = true;
-				else if (Quaternion.Angle(_source.transform.rotation, _secondNewestPoint.Rotation) > _maxAngle)
+				else if (Quaternion.Angle(_source.transform.rotation, _points[secondNewestPointIndex].Rotation) > _maxAngle)
 					add = true;
 			}
 			if (add)
@@ -104,11 +111,11 @@ public class Trail : MonoBehaviour {
 				InsertPoint();
 			}
 			if (!add)
-				_newestPoint.Update(_source.transform);
+				_points[newestPointIndex].Update(_source.transform);
 		}
 
 		// Do we render this?
-		if (pointCount < 2)
+		if (_pointCount < 2)
 		{
 			_renderer.enabled = false;
 			return;
@@ -120,7 +127,7 @@ public class Trail : MonoBehaviour {
 		// Do we fade it out?
 		if (!_emit)
 		{
-			if (pointCount == 0)
+			if (_pointCount == 0)
 				return;
 			var color = _instanceMaterial.GetColor("_TintColor");
 			color.a -= _fadeOutRatio * _lifeTimeRatio * Time.deltaTime;
@@ -132,12 +139,17 @@ public class Trail : MonoBehaviour {
 		// Rebuild it
 		_triangleBuffer.Clear();
 
-		var uvMultiplier = 1 / (_points.Peek().TimeAlive - _newestPoint.TimeAlive);
-		for (var i = 0; i < pointCount; i++)
+		var uvMultiplier = 1 / (_points[_oldestPoint].TimeAlive - _points[newestPointIndex].TimeAlive);
+		for (var i = 0; i < _pointCount; i++)
 		{
 			var v1 = i*2;
 			var v2 = i*2 + 1;
-			var point = _points.Dequeue();
+
+			var wrappedIndex = i + _oldestPoint;
+			if (wrappedIndex >= _points.Length)
+				wrappedIndex -= _points.Length;
+
+			var point = _points[wrappedIndex];
 			var ratio = point.TimeAlive * _lifeTimeRatio;
 			// Color
 			Color32 color;
@@ -178,7 +190,7 @@ public class Trail : MonoBehaviour {
 			_vertexBuffer[v2] = transform.TransformPoint(0, -width * 0.5f, 0);
 
 			// UVs
-			var uvRatio = (point.TimeAlive - _newestPoint.TimeAlive) * uvMultiplier;
+			var uvRatio = (point.TimeAlive - _points[newestPointIndex].TimeAlive) * uvMultiplier;
 			_uvBuffer[v1] = new Vector2(uvRatio, 0);
 			_uvBuffer[v2] = new Vector2(uvRatio, 1);
 
@@ -194,7 +206,6 @@ public class Trail : MonoBehaviour {
 				_triangleBuffer.Add(vertIndex + 0);
 				_triangleBuffer.Add(vertIndex - 1);
 			}
-			_points.Enqueue(point);
 		}
 		transform.position = Vector3.zero;
 		transform.rotation = Quaternion.identity;
@@ -207,16 +218,16 @@ public class Trail : MonoBehaviour {
 
 	private void InsertPoint()
 	{
-		_secondNewestPoint = _newestPoint;
-		_newestPoint = _pointPool.Count == 0
-			? new Point(_source)
-			: _pointPool.Dequeue().Update(_source);
-		_points.Enqueue(_newestPoint);
+		_pointCount++;
+		var wrappedIndex = _oldestPoint + _pointCount;
+		if (wrappedIndex >= _points.Length)
+			wrappedIndex -= _points.Length;
+		_points[wrappedIndex].Update(_source);
 	}
 
-	private class Point
+	private struct Point
 	{
-		public float TimeCreated = 0;
+		public float TimeCreated;
 		public float TimeAlive
 		{
 			get { return Time.time - TimeCreated; }
@@ -224,18 +235,11 @@ public class Trail : MonoBehaviour {
 		
 		public Vector3 Position;
 		public Quaternion Rotation;
-		public Point(Transform trans)
+		public void Update(Transform trans)
 		{
 			Position = trans.position;
 			Rotation = trans.rotation;
 			TimeCreated = Time.time;
-		}
-		public Point Update(Transform trans)
-		{
-			Position = trans.position;
-			Rotation = trans.rotation;
-			TimeCreated = Time.time;
-			return this;
 		}
 	}
 }
