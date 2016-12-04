@@ -37,6 +37,7 @@ public class Trail : MonoBehaviour {
 	// Points
 	private Queue<Point> _points = new Queue<Point>();
 	private Queue<Point> _pointPool = new Queue<Point>();
+	private Point _newestPoint;
 
 	private void Start()
 	{
@@ -75,22 +76,20 @@ public class Trail : MonoBehaviour {
 			}
 
 			var add = false;
-			var sqrDistance = (_points[1].Position - _source.transform.position).sqrMagnitude;
+			var sqrDistance = (_newestPoint.Position - _source.transform.position).sqrMagnitude;
 			if (sqrDistance > _minVertexDistance * _minVertexDistance)
 			{
 				if (sqrDistance > _maxVertexDistance * _maxVertexDistance)
 					add = true;
-				else if (Quaternion.Angle(_source.transform.rotation, _points[1].Rotation) > _maxAngle)
+				else if (Quaternion.Angle(_source.transform.rotation, _newestPoint.Rotation) > _maxAngle)
 					add = true;
 			}
 			if (add)
 			{
-				if (_pointCnt == _points.Length)
-					System.Array.Resize(ref _points, _points.Length + 50);
 				InsertPoint();
 			}
 			if (!add)
-				_points[0].Update(_source.transform);
+				_newestPoint.Update(_source.transform);
 		}
 
 		// Do we render this?
@@ -121,7 +120,7 @@ public class Trail : MonoBehaviour {
 		var triangles = new int[(pointCount - 1) * 6];
 		var meshColors = new Color[pointCount * 2];
 
-		var uvMultiplier = 1 / (_points[pointCount - 1].TimeAlive - _points[0].TimeAlive);
+		var uvMultiplier = 1 / (_points.Peek().TimeAlive - _newestPoint.TimeAlive);
 		for (var i = 0; i < pointCount; i++)
 		{
 			var point = _points[i];
@@ -165,7 +164,7 @@ public class Trail : MonoBehaviour {
 			vertices[(i * 2) + 1] = transform.TransformPoint(0, -width * 0.5f, 0);
 
 			// UVs
-			var uvRatio = (point.TimeAlive - _points[0].TimeAlive) * uvMultiplier;
+			var uvRatio = (point.TimeAlive - _newestPoint.TimeAlive) * uvMultiplier;
 			uvs[i * 2] = new Vector2(uvRatio, 0);
 			uvs[(i * 2) + 1] = new Vector2(uvRatio, 1);
 
