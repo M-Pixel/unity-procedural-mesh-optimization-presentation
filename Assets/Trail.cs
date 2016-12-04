@@ -194,10 +194,10 @@ public class Trail : MonoBehaviour {
 
 	private void InsertPoint()
 	{
-		for (var i = _pointCnt; i > 0; i--)
-			_points[i] = _points[i - 1];
-		_points[0] = new Point(_source);
-		_pointCnt++;
+		_newestPoint = _pointPool.Count == 0
+			? new Point(_source)
+			: _pointPool.Dequeue().Update(_source);
+		_points.Enqueue(_newestPoint);
 	}
 
 	private class Point
@@ -216,11 +216,12 @@ public class Trail : MonoBehaviour {
 			Rotation = trans.rotation;
 			TimeCreated = Time.time;
 		}
-		public void Update(Transform trans)
+		public Point Update(Transform trans)
 		{
 			Position = trans.position;
 			Rotation = trans.rotation;
 			TimeCreated = Time.time;
+			return this;
 		}
 	}
 }
