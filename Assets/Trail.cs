@@ -27,9 +27,6 @@ public class Trail : MonoBehaviour {
 	[SerializeField] private float _maxAngle = 2;
 	[SerializeField] private float _minVertexDistance = 0.1f;
 	[SerializeField] private float _maxVertexDistance = 1f;
-	[SerializeField] private float _optimizeAngleInterval = 0.1f;
-	[SerializeField] private float _optimizeDistanceInterval = 0.05f;
-	[SerializeField] private int _optimizeCount = 30;
 
 	// Components
 	[SerializeField] private Transform _source;
@@ -62,14 +59,6 @@ public class Trail : MonoBehaviour {
 			}
 			else
 				break;
-		}
-
-		// Optimization
-		if (_pointCnt > _optimizeCount)
-		{
-			_maxAngle += _optimizeAngleInterval;
-			_maxVertexDistance += _optimizeDistanceInterval;
-			_optimizeCount += 1;
 		}
 
 		// Do we add any new points?
