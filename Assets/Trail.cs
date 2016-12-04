@@ -38,6 +38,7 @@ public class Trail : MonoBehaviour {
 	private Queue<Point> _points = new Queue<Point>();
 	private Queue<Point> _pointPool = new Queue<Point>();
 	private Point _newestPoint;
+	private Point _secondNewestPoint;
 
 	private void Start()
 	{
@@ -76,12 +77,12 @@ public class Trail : MonoBehaviour {
 			}
 
 			var add = false;
-			var sqrDistance = (_newestPoint.Position - _source.transform.position).sqrMagnitude;
+			var sqrDistance = (_secondNewestPoint.Position - _source.transform.position).sqrMagnitude;
 			if (sqrDistance > _minVertexDistance * _minVertexDistance)
 			{
 				if (sqrDistance > _maxVertexDistance * _maxVertexDistance)
 					add = true;
-				else if (Quaternion.Angle(_source.transform.rotation, _newestPoint.Rotation) > _maxAngle)
+				else if (Quaternion.Angle(_source.transform.rotation, _secondNewestPoint.Rotation) > _maxAngle)
 					add = true;
 			}
 			if (add)
@@ -194,6 +195,7 @@ public class Trail : MonoBehaviour {
 
 	private void InsertPoint()
 	{
+		_secondNewestPoint = _newestPoint;
 		_newestPoint = _pointPool.Count == 0
 			? new Point(_source)
 			: _pointPool.Dequeue().Update(_source);
