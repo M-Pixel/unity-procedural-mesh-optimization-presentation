@@ -121,12 +121,9 @@ public class Trail : MonoBehaviour {
 		var meshColors = new Color[pointCount * 2];
 
 		var uvMultiplier = 1 / (_points.Peek().TimeAlive - _newestPoint.TimeAlive);
-		using (var enumerator = _points.GetEnumerator())
+		for (var i = 0; i < pointCount; i++)
 		{
-			var i = 0;
-			while (enumerator.MoveNext())
-			{
-				var point = enumerator.Current;
+			var point = _points[i];
 			var ratio = point.TimeAlive * _lifeTimeRatio;
 			// Color
 			Color color;
@@ -183,9 +180,6 @@ public class Trail : MonoBehaviour {
 				triangles[triIndex + 3] = vertIndex + 1;
 				triangles[triIndex + 4] = vertIndex + 0;
 				triangles[triIndex + 5] = vertIndex - 1;
-				}
-
-				i++;
 			}
 		}
 		transform.position = Vector3.zero;
