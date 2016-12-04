@@ -48,7 +48,7 @@ public class Trail : MonoBehaviour {
 		trailObj.AddComponent(typeof(MeshRenderer));
 		instanceMaterial = new Material(material);
 		fadeOutRatio = 1f / instanceMaterial.GetColor("_TintColor").a;
-		trailObj.renderer.material = instanceMaterial;
+		trailObj.GetComponent<Renderer>().material = instanceMaterial;
 	}
 
 	void Update()
@@ -113,10 +113,10 @@ public class Trail : MonoBehaviour {
 		// Do we render this?
 		if (pointCnt < 2)
 		{
-			trailObj.renderer.enabled = false;
+			trailObj.GetComponent<Renderer>().enabled = false;
 			return;
 		}
-		trailObj.renderer.enabled = true;
+		trailObj.GetComponent<Renderer>().enabled = true;
 
 		Color[] meshColors;
 		lifeTimeRatio = 1 / lifeTime;
