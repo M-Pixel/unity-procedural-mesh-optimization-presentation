@@ -121,15 +121,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _material: {fileID: 2100000, guid: fb785869b349de2499638daeb663a2d9, type: 2}
   _emit: 1
-  _segmentLifetime: 1
+  _segmentLifetime: 60
   _colors: []
   _widths: []
   _maxAngle: 2
   _minVertexDistance: 0.05
   _maxVertexDistance: 0.3
-  _optimizeAngleInterval: 0.1
-  _optimizeDistanceInterval: 0.05
-  _optimizeCount: 30
   _source: {fileID: 1814559164}
 --- !u!4 &1557853282
 Transform:
