@@ -35,27 +35,27 @@ public class Trail : MonoBehaviour {
 	private MeshRenderer _renderer;
 
 	// Points
-	[SerializeField] int _initialAllocation = 100;
+	[SerializeField] int _maximumPoints = 500;
 	private Queue<Point> _points;
 	private Queue<Point> _pointPool;
 	private Point _newestPoint;
 	private Point _secondNewestPoint;
 
 	// Mesh
-	private List<Vector3> _vertexBuffer;
-	private List<Vector2> _uvBuffer;
+	private Vector3[] _vertexBuffer;
+	private Vector2[] _uvBuffer;
 	private List<int> _triangleBuffer;
-	private List<Color32> _colorBuffer;
+	private Color32[] _colorBuffer;
 
 
 	private void Start()
 	{
-		_points = new Queue<Point>(_initialAllocation);
-		_pointPool = new Queue<Point>(_initialAllocation);
-		_vertexBuffer = new List<Vector3>(_initialAllocation * 2);
-		_uvBuffer = new List<Vector2>(_initialAllocation * 2);
-		_triangleBuffer = new List<int>(_initialAllocation * 6);
-		_colorBuffer = new List<Color32>(_initialAllocation * 2);
+		_points = new Queue<Point>(_maximumPoints);
+		_pointPool = new Queue<Point>(_maximumPoints);
+		_vertexBuffer = new Vector3[_maximumPoints * 2];
+		_uvBuffer = new Vector2[_maximumPoints * 2];
+		_triangleBuffer = new List<int>(_maximumPoints * 6);
+		_colorBuffer = new Color32[_maximumPoints * 2];
 		_mesh = GetComponent<MeshFilter>().mesh;
 		_instanceMaterial = new Material(_material);
 		_fadeOutRatio = 1f / _instanceMaterial.GetColor("_TintColor").a;
@@ -130,33 +130,32 @@ public class Trail : MonoBehaviour {
 		}
 
 		// Rebuild it
-		_vertexBuffer.Clear();
-		_uvBuffer.Clear();
 		_triangleBuffer.Clear();
-		_colorBuffer.Clear();
 
 		var uvMultiplier = 1 / (_points.Peek().TimeAlive - _newestPoint.TimeAlive);
 		for (var i = 0; i < pointCount; i++)
 		{
+			var v1 = i*2;
+			var v2 = i*2 + 1;
 			var point = _points.Dequeue();
 			var ratio = point.TimeAlive * _lifeTimeRatio;
 			// Color
-			Color color;
+			Color32 color;
 			if (_colors.Length == 0)
-				color = Color.Lerp(Color.white, Color.clear, ratio);
+				color = Color32.Lerp(new Color32(255, 255, 255, 255), new Color32(255, 255, 255, 0), ratio);
 			else if (_colors.Length == 1)
-				color = Color.Lerp(_colors[0], Color.clear, ratio);
+				color = Color32.Lerp(_colors[0], new Color32(255, 255, 255, 0), ratio);
 			else if (_colors.Length == 2)
-				color = Color.Lerp(_colors[0], _colors[1], ratio);
+				color = Color32.Lerp(_colors[0], _colors[1], ratio);
 			else
 			{
 				var colorRatio = ratio * (_colors.Length - 1);
 				var min = (int)Mathf.Floor(colorRatio);
 				var lerp = Mathf.InverseLerp(min, min + 1, colorRatio);
-				color = Color.Lerp(_colors[min], _colors[min + 1], lerp);
+				color = Color32.Lerp(_colors[min], _colors[min + 1], lerp);
 			}
-			_colorBuffer.Add(color);
-			_colorBuffer.Add(color);
+			_colorBuffer[v1] = color;
+			_colorBuffer[v2] = color;
 
 			// Width
 			float width;
@@ -175,13 +174,13 @@ public class Trail : MonoBehaviour {
 			}
 			transform.position = point.Position;
 			transform.rotation = point.Rotation;
-			_vertexBuffer.Add(transform.TransformPoint(0, width * 0.5f, 0));
-			_vertexBuffer.Add(transform.TransformPoint(0, -width * 0.5f, 0));
+			_vertexBuffer[v1] = transform.TransformPoint(0, width * 0.5f, 0);
+			_vertexBuffer[v2] = transform.TransformPoint(0, -width * 0.5f, 0);
 
 			// UVs
 			var uvRatio = (point.TimeAlive - _newestPoint.TimeAlive) * uvMultiplier;
-			_uvBuffer.Add(new Vector2(uvRatio, 0));
-			_uvBuffer.Add(new Vector2(uvRatio, 1));
+			_uvBuffer[v1] = new Vector2(uvRatio, 0);
+			_uvBuffer[v2] = new Vector2(uvRatio, 1);
 
 			if (i > 0)
 			{
@@ -200,9 +199,9 @@ public class Trail : MonoBehaviour {
 		transform.position = Vector3.zero;
 		transform.rotation = Quaternion.identity;
 		_mesh.Clear();
-		_mesh.SetVertices(_vertexBuffer);
-		_mesh.SetColors(_colorBuffer);
-		_mesh.SetUVs(0, _uvBuffer);
+		_mesh.vertices = _vertexBuffer;
+		_mesh.colors32 = _colorBuffer;
+		_mesh.uv = _uvBuffer;
 		_mesh.SetTriangles(_triangleBuffer, 0);
 	}
 
