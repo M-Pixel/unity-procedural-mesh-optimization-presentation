@@ -3,6 +3,8 @@
 /// <summary>
 /// Based on http://wiki.unity3d.com/index.php/OptimizedTrailRenderer
 /// </summary>
+[RequireComponent(typeof(MeshFilter))]
+[RequireComponent(typeof(MeshRenderer))]
 public class Trail : MonoBehaviour {
 	[Tooltip("Must be a particle material that has the \"Tint Color\" property")]
 	[SerializeField] private Material _material;
@@ -30,9 +32,10 @@ public class Trail : MonoBehaviour {
 	[SerializeField] private float _optimizeDistanceInterval = 0.05f;
 	[SerializeField] private int _optimizeCount = 30;
 
-	// Object
-	[SerializeField] private GameObject _trailObj = null;
-	[SerializeField] private Mesh _mesh = null;
+	// Components
+	[SerializeField] private Transform _source;
+	private Mesh _mesh;
+	private MeshRenderer _renderer;
 
 	// Points
 	private Point[] _points = new Point[100];
@@ -40,17 +43,11 @@ public class Trail : MonoBehaviour {
 
 	private void Start()
 	{
-		_trailObj = new GameObject("Trail");
-		_trailObj.transform.parent = null;
-		_trailObj.transform.position = Vector3.zero;
-		_trailObj.transform.rotation = Quaternion.identity;
-		_trailObj.transform.localScale = Vector3.one;
-		var meshFilter = (MeshFilter)_trailObj.AddComponent(typeof(MeshFilter));
-		_mesh = meshFilter.mesh;
-		_trailObj.AddComponent(typeof(MeshRenderer));
+		_mesh = GetComponent<MeshFilter>().mesh;
 		_instanceMaterial = new Material(_material);
 		_fadeOutRatio = 1f / _instanceMaterial.GetColor("_TintColor").a;
-		_trailObj.GetComponent<Renderer>().material = _instanceMaterial;
+		_renderer = GetComponent<MeshRenderer>();
+		_renderer.material = _instanceMaterial;
 	}
 
 	private void Update()
@@ -87,19 +84,19 @@ public class Trail : MonoBehaviour {
 		{
 			if (_pointCnt == 0)
 			{
-				_points[_pointCnt++] = new Point(transform);
-				_points[_pointCnt++] = new Point(transform);
+				_points[_pointCnt++] = new Point(_source.transform);
+				_points[_pointCnt++] = new Point(_source.transform);
 			}
 			if (_pointCnt == 1)
 				InsertPoint();
 
 			var add = false;
-			var sqrDistance = (_points[1].Position - transform.position).sqrMagnitude;
+			var sqrDistance = (_points[1].Position - _source.transform.position).sqrMagnitude;
 			if (sqrDistance > _minVertexDistance * _minVertexDistance)
 			{
 				if (sqrDistance > _maxVertexDistance * _maxVertexDistance)
 					add = true;
-				else if (Quaternion.Angle(transform.rotation, _points[1].Rotation) > _maxAngle)
+				else if (Quaternion.Angle(_source.transform.rotation, _points[1].Rotation) > _maxAngle)
 					add = true;
 			}
 			if (add)
@@ -109,16 +106,16 @@ public class Trail : MonoBehaviour {
 				InsertPoint();
 			}
 			if (!add)
-				_points[0].Update(transform);
+				_points[0].Update(_source.transform);
 		}
 
 		// Do we render this?
 		if (_pointCnt < 2)
 		{
-			_trailObj.GetComponent<Renderer>().enabled = false;
+			_renderer.enabled = false;
 			return;
 		}
-		_trailObj.GetComponent<Renderer>().enabled = true;
+		_renderer.enabled = true;
 
 		_lifeTimeRatio = 1 / _segmentLifetime;
 
@@ -131,11 +128,6 @@ public class Trail : MonoBehaviour {
 			color.a -= _fadeOutRatio * _lifeTimeRatio * Time.deltaTime;
 			if (color.a > 0)
 				_instanceMaterial.SetColor("_TintColor", color);
-			else
-			{
-				Destroy(_trailObj);
-				Destroy(this);
-			}
 			return;
 		}
 
@@ -183,10 +175,10 @@ public class Trail : MonoBehaviour {
 				var lerp = Mathf.InverseLerp(min, min + 1, widthRatio);
 				width = Mathf.Lerp(_widths[min], _widths[min + 1], lerp);
 			}
-			_trailObj.transform.position = point.Position;
-			_trailObj.transform.rotation = point.Rotation;
-			vertices[i * 2] = _trailObj.transform.TransformPoint(0, width * 0.5f, 0);
-			vertices[(i * 2) + 1] = _trailObj.transform.TransformPoint(0, -width * 0.5f, 0);
+			transform.position = point.Position;
+			transform.rotation = point.Rotation;
+			vertices[i * 2] = transform.TransformPoint(0, width * 0.5f, 0);
+			vertices[(i * 2) + 1] = transform.TransformPoint(0, -width * 0.5f, 0);
 
 			// UVs
 			var uvRatio = (point.TimeAlive - _points[0].TimeAlive) * uvMultiplier;
@@ -207,8 +199,8 @@ public class Trail : MonoBehaviour {
 				triangles[triIndex + 5] = vertIndex - 1;
 			}
 		}
-		_trailObj.transform.position = Vector3.zero;
-		_trailObj.transform.rotation = Quaternion.identity;
+		transform.position = Vector3.zero;
+		transform.rotation = Quaternion.identity;
 		_mesh.Clear();
 		_mesh.vertices = vertices;
 		_mesh.colors = meshColors;
@@ -220,7 +212,7 @@ public class Trail : MonoBehaviour {
 	{
 		for (var i = _pointCnt; i > 0; i--)
 			_points[i] = _points[i - 1];
-		_points[0] = new Point(transform);
+		_points[0] = new Point(_source);
 		_pointCnt++;
 	}
 
