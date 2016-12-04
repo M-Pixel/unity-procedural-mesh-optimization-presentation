@@ -5,202 +5,200 @@
 /// </summary>
 public class Trail : MonoBehaviour {
 	// Material - Must be a particle material that has the "Tint Color" property
-	public Material material;
-	Material instanceMaterial;
+	[SerializeField] private Material _material;
+	private Material _instanceMaterial;
 
 	// Emit
-	public bool emit = true;
-	bool emittingDone = false;
+	[SerializeField] private bool _emit = true;
+	private bool _emittingDone = false;
 
 	// Lifetime of each segment
-	public float lifeTime = 1;
-	float lifeTimeRatio = 1;
-	float fadeOutRatio;
+	[SerializeField] private float _lifeTime = 1;
+	private float _lifeTimeRatio = 1;
+	private float _fadeOutRatio;
 
 	// Colors
-	public Color[] colors;
+	[SerializeField] private Color[] _colors;
 
 	// Widths
-	public float[] widths;
+	[SerializeField] private float[] _widths;
 
 	// Segment creation data
-	public float maxAngle = 2;
-	public float minVertexDistance = 0.1f;
-	public float maxVertexDistance = 1f;
-	public float optimizeAngleInterval = 0.1f;
-	public float optimizeDistanceInterval = 0.05f;
-	public int optimizeCount = 30;
+	[SerializeField] private float _maxAngle = 2;
+	[SerializeField] private float _minVertexDistance = 0.1f;
+	[SerializeField] private float _maxVertexDistance = 1f;
+	[SerializeField] private float _optimizeAngleInterval = 0.1f;
+	[SerializeField] private float _optimizeDistanceInterval = 0.05f;
+	[SerializeField] private int _optimizeCount = 30;
 
 	// Object
-	GameObject trailObj = null;
-	Mesh mesh = null;
+	[SerializeField] private GameObject _trailObj = null;
+	[SerializeField] private Mesh _mesh = null;
 
 	// Points
-	Point[] points = new Point[100];
-	int pointCnt = 0;
+	private Point[] _points = new Point[100];
+	private int _pointCnt = 0;
 
-	void Start()
+	private void Start()
 	{
-		trailObj = new GameObject("Trail");
-		trailObj.transform.parent = null;
-		trailObj.transform.position = Vector3.zero;
-		trailObj.transform.rotation = Quaternion.identity;
-		trailObj.transform.localScale = Vector3.one;
-		MeshFilter meshFilter = (MeshFilter)trailObj.AddComponent(typeof(MeshFilter));
-		mesh = meshFilter.mesh;
-		trailObj.AddComponent(typeof(MeshRenderer));
-		instanceMaterial = new Material(material);
-		fadeOutRatio = 1f / instanceMaterial.GetColor("_TintColor").a;
-		trailObj.GetComponent<Renderer>().material = instanceMaterial;
+		_trailObj = new GameObject("Trail");
+		_trailObj.transform.parent = null;
+		_trailObj.transform.position = Vector3.zero;
+		_trailObj.transform.rotation = Quaternion.identity;
+		_trailObj.transform.localScale = Vector3.one;
+		var meshFilter = (MeshFilter)_trailObj.AddComponent(typeof(MeshFilter));
+		_mesh = meshFilter.mesh;
+		_trailObj.AddComponent(typeof(MeshRenderer));
+		_instanceMaterial = new Material(_material);
+		_fadeOutRatio = 1f / _instanceMaterial.GetColor("_TintColor").a;
+		_trailObj.GetComponent<Renderer>().material = _instanceMaterial;
 	}
 
-	void Update()
+	private void Update()
 	{
 		// Emitting - Designed for one-time use
-		if (!emit)
-			emittingDone = true;
-		if (emittingDone)
-			emit = false;
+		if (!_emit)
+			_emittingDone = true;
+		if (_emittingDone)
+			_emit = false;
 
 		// Remove expired points
-		for (int i = pointCnt - 1; i >= 0; i--)
+		for (var i = _pointCnt - 1; i >= 0; i--)
 		{
-			Point point = points[i];
-			if (point == null || point.timeAlive > lifeTime)
+			var point = _points[i];
+			if (point == null || point.TimeAlive > _lifeTime)
 			{
-				points[i] = null;
-				pointCnt--;
+				_points[i] = null;
+				_pointCnt--;
 			}
 			else
 				break;
 		}
 
 		// Optimization
-		if (pointCnt > optimizeCount)
+		if (_pointCnt > _optimizeCount)
 		{
-			maxAngle += optimizeAngleInterval;
-			maxVertexDistance += optimizeDistanceInterval;
-			optimizeCount += 1;
+			_maxAngle += _optimizeAngleInterval;
+			_maxVertexDistance += _optimizeDistanceInterval;
+			_optimizeCount += 1;
 		}
 
 		// Do we add any new points?
-		if (emit)
+		if (_emit)
 		{
-			if (pointCnt == 0)
+			if (_pointCnt == 0)
 			{
-				points[pointCnt++] = new Point(transform);
-				points[pointCnt++] = new Point(transform);
+				_points[_pointCnt++] = new Point(transform);
+				_points[_pointCnt++] = new Point(transform);
 			}
-			if (pointCnt == 1)
-				insertPoint();
+			if (_pointCnt == 1)
+				InsertPoint();
 
-			bool add = false;
-			float sqrDistance = (points[1].position - transform.position).sqrMagnitude;
-			if (sqrDistance > minVertexDistance * minVertexDistance)
+			var add = false;
+			var sqrDistance = (_points[1].Position - transform.position).sqrMagnitude;
+			if (sqrDistance > _minVertexDistance * _minVertexDistance)
 			{
-				if (sqrDistance > maxVertexDistance * maxVertexDistance)
+				if (sqrDistance > _maxVertexDistance * _maxVertexDistance)
 					add = true;
-				else if (Quaternion.Angle(transform.rotation, points[1].rotation) > maxAngle)
+				else if (Quaternion.Angle(transform.rotation, _points[1].Rotation) > _maxAngle)
 					add = true;
 			}
 			if (add)
 			{
-				if (pointCnt == points.Length)
-					System.Array.Resize(ref points, points.Length + 50);
-				insertPoint();
+				if (_pointCnt == _points.Length)
+					System.Array.Resize(ref _points, _points.Length + 50);
+				InsertPoint();
 			}
 			if (!add)
-				points[0].update(transform);
+				_points[0].Update(transform);
 		}
 
 		// Do we render this?
-		if (pointCnt < 2)
+		if (_pointCnt < 2)
 		{
-			trailObj.GetComponent<Renderer>().enabled = false;
+			_trailObj.GetComponent<Renderer>().enabled = false;
 			return;
 		}
-		trailObj.GetComponent<Renderer>().enabled = true;
+		_trailObj.GetComponent<Renderer>().enabled = true;
 
-		Color[] meshColors;
-		lifeTimeRatio = 1 / lifeTime;
+		_lifeTimeRatio = 1 / _lifeTime;
 
 		// Do we fade it out?
-		if (!emit)
+		if (!_emit)
 		{
-			if (pointCnt == 0)
+			if (_pointCnt == 0)
 				return;
-			Color color = instanceMaterial.GetColor("_TintColor");
-			color.a -= fadeOutRatio * lifeTimeRatio * Time.deltaTime;
+			var color = _instanceMaterial.GetColor("_TintColor");
+			color.a -= _fadeOutRatio * _lifeTimeRatio * Time.deltaTime;
 			if (color.a > 0)
-				instanceMaterial.SetColor("_TintColor", color);
+				_instanceMaterial.SetColor("_TintColor", color);
 			else
 			{
-				Destroy(trailObj);
+				Destroy(_trailObj);
 				Destroy(this);
 			}
 			return;
 		}
 
 		// Rebuild it
-		Vector3[] vertices = new Vector3[pointCnt * 2];
-		Vector2[] uvs = new Vector2[pointCnt * 2];
-		int[] triangles = new int[(pointCnt - 1) * 6];
-		meshColors = new Color[pointCnt * 2];
+		var vertices = new Vector3[_pointCnt * 2];
+		var uvs = new Vector2[_pointCnt * 2];
+		var triangles = new int[(_pointCnt - 1) * 6];
+		var meshColors = new Color[_pointCnt * 2];
 
-		float uvMultiplier = 1 / (points[pointCnt - 1].timeAlive - points[0].timeAlive);
-		for (int i = 0; i < pointCnt; i++)
+		var uvMultiplier = 1 / (_points[_pointCnt - 1].TimeAlive - _points[0].TimeAlive);
+		for (var i = 0; i < _pointCnt; i++)
 		{
-			Point point = points[i];
-			float ratio = point.timeAlive * lifeTimeRatio;
+			var point = _points[i];
+			var ratio = point.TimeAlive * _lifeTimeRatio;
 			// Color
 			Color color;
-			if (colors.Length == 0)
+			if (_colors.Length == 0)
 				color = Color.Lerp(Color.white, Color.clear, ratio);
-			else if (colors.Length == 1)
-				color = Color.Lerp(colors[0], Color.clear, ratio);
-			else if (colors.Length == 2)
-				color = Color.Lerp(colors[0], colors[1], ratio);
+			else if (_colors.Length == 1)
+				color = Color.Lerp(_colors[0], Color.clear, ratio);
+			else if (_colors.Length == 2)
+				color = Color.Lerp(_colors[0], _colors[1], ratio);
 			else
 			{
-				float colorRatio = ratio * (colors.Length - 1);
-				int min = (int)Mathf.Floor(colorRatio);
-				float lerp = Mathf.InverseLerp(min, min + 1, colorRatio);
-				color = Color.Lerp(colors[min], colors[min + 1], lerp);
+				var colorRatio = ratio * (_colors.Length - 1);
+				var min = (int)Mathf.Floor(colorRatio);
+				var lerp = Mathf.InverseLerp(min, min + 1, colorRatio);
+				color = Color.Lerp(_colors[min], _colors[min + 1], lerp);
 			}
 			meshColors[i * 2] = color;
 			meshColors[(i * 2) + 1] = color;
 
 			// Width
 			float width;
-			if (widths.Length == 0)
+			if (_widths.Length == 0)
 				width = 1;
-			else if (widths.Length == 1)
-				width = widths[0];
-			else if (widths.Length == 2)
-				width = Mathf.Lerp(widths[0], widths[1], ratio);
+			else if (_widths.Length == 1)
+				width = _widths[0];
+			else if (_widths.Length == 2)
+				width = Mathf.Lerp(_widths[0], _widths[1], ratio);
 			else
 			{
-				float widthRatio = ratio * (widths.Length - 1);
-				int min = (int)Mathf.Floor(widthRatio);
-				float lerp = Mathf.InverseLerp(min, min + 1, widthRatio);
-				width = Mathf.Lerp(widths[min], widths[min + 1], lerp);
+				var widthRatio = ratio * (_widths.Length - 1);
+				var min = (int)Mathf.Floor(widthRatio);
+				var lerp = Mathf.InverseLerp(min, min + 1, widthRatio);
+				width = Mathf.Lerp(_widths[min], _widths[min + 1], lerp);
 			}
-			trailObj.transform.position = point.position;
-			trailObj.transform.rotation = point.rotation;
-			vertices[i * 2] = trailObj.transform.TransformPoint(0, width * 0.5f, 0);
-			vertices[(i * 2) + 1] = trailObj.transform.TransformPoint(0, -width * 0.5f, 0);
+			_trailObj.transform.position = point.Position;
+			_trailObj.transform.rotation = point.Rotation;
+			vertices[i * 2] = _trailObj.transform.TransformPoint(0, width * 0.5f, 0);
+			vertices[(i * 2) + 1] = _trailObj.transform.TransformPoint(0, -width * 0.5f, 0);
 
 			// UVs
-			float uvRatio;
-			uvRatio = (point.timeAlive - points[0].timeAlive) * uvMultiplier;
+			var uvRatio = (point.TimeAlive - _points[0].TimeAlive) * uvMultiplier;
 			uvs[i * 2] = new Vector2(uvRatio, 0);
 			uvs[(i * 2) + 1] = new Vector2(uvRatio, 1);
 
 			if (i > 0)
 			{
 				// Triangles
-				int triIndex = (i - 1) * 6;
-				int vertIndex = i * 2;
+				var triIndex = (i - 1) * 6;
+				var vertIndex = i * 2;
 				triangles[triIndex + 0] = vertIndex - 2;
 				triangles[triIndex + 1] = vertIndex - 1;
 				triangles[triIndex + 2] = vertIndex - 0;
@@ -210,44 +208,44 @@ public class Trail : MonoBehaviour {
 				triangles[triIndex + 5] = vertIndex - 1;
 			}
 		}
-		trailObj.transform.position = Vector3.zero;
-		trailObj.transform.rotation = Quaternion.identity;
-		mesh.Clear();
-		mesh.vertices = vertices;
-		mesh.colors = meshColors;
-		mesh.uv = uvs;
-		mesh.triangles = triangles;
+		_trailObj.transform.position = Vector3.zero;
+		_trailObj.transform.rotation = Quaternion.identity;
+		_mesh.Clear();
+		_mesh.vertices = vertices;
+		_mesh.colors = meshColors;
+		_mesh.uv = uvs;
+		_mesh.triangles = triangles;
 	}
 
-	void insertPoint()
+	private void InsertPoint()
 	{
-		for (int i = pointCnt; i > 0; i--)
-			points[i] = points[i - 1];
-		points[0] = new Point(transform);
-		pointCnt++;
+		for (var i = _pointCnt; i > 0; i--)
+			_points[i] = _points[i - 1];
+		_points[0] = new Point(transform);
+		_pointCnt++;
 	}
 
-	class Point
+	private class Point
 	{
-		public float timeCreated = 0;
-		public float timeAlive
+		public float TimeCreated = 0;
+		public float TimeAlive
 		{
-			get { return Time.time - timeCreated; }
+			get { return Time.time - TimeCreated; }
 		}
-		public float fadeAlpha = 0;
-		public Vector3 position = Vector3.zero;
-		public Quaternion rotation = Quaternion.identity;
+		
+		public Vector3 Position;
+		public Quaternion Rotation;
 		public Point(Transform trans)
 		{
-			position = trans.position;
-			rotation = trans.rotation;
-			timeCreated = Time.time;
+			Position = trans.position;
+			Rotation = trans.rotation;
+			TimeCreated = Time.time;
 		}
-		public void update(Transform trans)
+		public void Update(Transform trans)
 		{
-			position = trans.position;
-			rotation = trans.rotation;
-			timeCreated = Time.time;
+			Position = trans.position;
+			Rotation = trans.rotation;
+			TimeCreated = Time.time;
 		}
 	}
 }
