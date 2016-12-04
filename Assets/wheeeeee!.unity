@@ -125,8 +125,8 @@ MonoBehaviour:
   _colors: []
   _widths: []
   _maxAngle: 2
-  _minVertexDistance: 0.1
-  _maxVertexDistance: 1
+  _minVertexDistance: 0.05
+  _maxVertexDistance: 0.3
   _optimizeAngleInterval: 0.1
   _optimizeDistanceInterval: 0.05
   _optimizeCount: 30
