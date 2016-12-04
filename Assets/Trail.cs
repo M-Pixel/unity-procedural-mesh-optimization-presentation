@@ -4,16 +4,15 @@
 /// Based on http://wiki.unity3d.com/index.php/OptimizedTrailRenderer
 /// </summary>
 public class Trail : MonoBehaviour {
-	// Material - Must be a particle material that has the "Tint Color" property
+	[Tooltip("Must be a particle material that has the \"Tint Color\" property")]
 	[SerializeField] private Material _material;
 	private Material _instanceMaterial;
 
 	// Emit
 	[SerializeField] private bool _emit = true;
 	private bool _emittingDone = false;
-
-	// Lifetime of each segment
-	[SerializeField] private float _lifeTime = 1;
+	
+	[SerializeField] private float _segmentLifetime = 1;
 	private float _lifeTimeRatio = 1;
 	private float _fadeOutRatio;
 
@@ -66,7 +65,7 @@ public class Trail : MonoBehaviour {
 		for (var i = _pointCnt - 1; i >= 0; i--)
 		{
 			var point = _points[i];
-			if (point == null || point.TimeAlive > _lifeTime)
+			if (point == null || point.TimeAlive > _segmentLifetime)
 			{
 				_points[i] = null;
 				_pointCnt--;
@@ -121,7 +120,7 @@ public class Trail : MonoBehaviour {
 		}
 		_trailObj.GetComponent<Renderer>().enabled = true;
 
-		_lifeTimeRatio = 1 / _lifeTime;
+		_lifeTimeRatio = 1 / _segmentLifetime;
 
 		// Do we fade it out?
 		if (!_emit)
