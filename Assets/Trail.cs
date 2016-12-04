@@ -50,16 +50,15 @@ public class Trail : MonoBehaviour {
 	private void Update()
 	{
 		// Remove expired points
-		for (var i = _pointCnt - 1; i >= 0; i--)
+		while (_points.Count > 0)
 		{
-			var point = _points[i];
+			var point = _points.Peek();
 			if (point == null || point.TimeAlive > _segmentLifetime)
 			{
-				_points[i] = null;
-				_pointCnt--;
+				_pointPool.Enqueue(_points.Dequeue());
+				continue;
 			}
-			else
-				break;
+			break;
 		}
 
 		// Do we add any new points?
